@@ -1,21 +1,27 @@
 import slugify from "slugify";
 
-import User from "../../../DB/Models/user.model.js";
 import Category from "../../../DB/Models/category.model.js";
 import SubCategory from "../../../DB/Models/sub-category.model.js";
 import Brand from "../../../DB/Models/brand.model.js";
-import Product from "../../../DB/Models/product.model.js";
 
-import { systemRoles } from "../../utils/system-roles.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
 import generateUniqueString from "../../utils/generate-unique-string.js";
-
+import { ApiFeatures } from "../../utils/api-features.js";
 // ========================================= addSubCategory ================================//
 
 /**
  * destructuring the required data from the request body
  * create new document in the database
- *
+ * check user login
+ * check if the subcategory already exists
+ * check if the category exists
+ * generate slug
+ * upload image to cloudinary
+ * generate the subcategory object
+ *  save the subcategory
+ * add subcategory to the category
+ * add subcategory to the brand
+ * add subcategory to the user
  */
 
 export const addSubCategory = async (req, res) => {
@@ -77,7 +83,12 @@ export const addSubCategory = async (req, res) => {
 /**
  * destructuring the required data from the request body
  * update the document in the database
- *
+ * check if the subcategory exists
+ * check if the category exists
+ * return the response
+ * upload image to cloudinary
+ * update the subcategory
+ * return the response
  */
 
 export const updateSubCategory = async (req, res) => {
@@ -177,21 +188,69 @@ export const deleteSubCategory = async (req, res) => {
   });
 };
 
+// ========================================= getSubCategoryById ================================//
+
+/**
+ * get the document in the database
+ * return the response
+ */
+
+export const getSubCategoryById = async (req, res, next) => {
+  const { subCategoryId } = req.params;
+
+  const subCategory = await SubCategory.findById(subCategoryId);
+
+  if (!subCategory) {
+    return next({ message: "SubCategory not found", cause: 404 });
+  }
+
+  res.status(200).json({ subCategory });
+  next({ message: "Failed to fetch SubCategory", cause: 500 });
+};
+
 // ========================================= getAllSubCategory ================================//
 
 /**
  * get the document in the database
+ * return the response
  */
 
 export const getAllSubCategory = async (req, res) => {
-  const subCategories = await SubCategory.find().populate([
-    {
-      path: "Brands",
-    },
-  ]);
+  const { page, size, sort, ...search } = req.query;
+
+  const features = new ApiFeatures(req.query, SubCategory.find())
+    .sort(sort)
+    .pagination({ page, size })
+    .search(search);
+
+  const subCategories = await features.mongooseQuery;
+
   res.status(200).json({
     success: true,
-    message: "Categories fetched successfully",
+    message: "SubCategories fetched successfully",
     data: subCategories,
   });
+};
+
+// ========================================= getAllSubCategoriesForCategory ================================//
+
+/**
+ * get the document in the database
+ * return the response
+ * Check if the category exists
+ * get subCategories
+ * return the response
+ */
+
+export const getAllSubCategoriesForCategory = async (req, res, next) => {
+  const { categoryId } = req.params;
+
+  const category = await Category.findById(categoryId);
+  if (!category) {
+    return next({ message: "Category not found", cause: 404 });
+  }
+
+  const subCategories = await SubCategory.find({ categoryId });
+
+  res.status(200).json({ subCategories });
 };

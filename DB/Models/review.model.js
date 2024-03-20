@@ -1,32 +1,33 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
-const reviewSchema = new Schema(
+const reviewSchema = new mongoose.Schema(
   {
-    text: {
-      type: String,
-      required: true,
-      //   unique: [true, "review text is required!"],
-      minLength: [0, "too short review text"],
-      maxLength: [100, "too long review text"],
-      trim: true,
-      lowercase: true,
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: [1, "min rating is 1"],
-      max: [5, "max rating is 5"],
-    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
-    product: {
+    productId: {
       type: Schema.Types.ObjectId,
       ref: "Product",
+      required: true,
+    },
+    reviewComment: {
+      type: String,
+      minLength: [0, "too short review text"],
+      maxLength: [100, "too long review text"],
+    },
+    reviewRate: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+      enum:[1,2,3,4,5],
+      
+
     },
   },
   { timestamps: true }
 );
 
-export default model("Review", reviewSchema);
+export default mongoose.models.Review || model("Review", reviewSchema);

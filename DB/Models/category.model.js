@@ -1,20 +1,17 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
-const categorySchema = new Schema(
+const categorySchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      // unique: [true, "Category name is required!"],
       minLength: [3, "too short Category name"],
       maxLength: [20, "too long Category name"],
       trim: true,
-      // lowercase: true,
     },
     slug: {
       type: String,
       lowercase: true,
-      // required: true,
     },
     image: {
       secure_url: {
@@ -24,7 +21,6 @@ const categorySchema = new Schema(
       public_id: {
         type: String,
         required: true,
-        // unique: true,
       },
     },
     folderId: {
@@ -41,6 +37,7 @@ const categorySchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+
   },
   {
     timestamps: true,
@@ -55,4 +52,4 @@ categorySchema.virtual("subcategories", {
   foreignField: "categoryId",
 });
 
-export default model("Category", categorySchema);
+export default mongoose.models.Category || model("Category", categorySchema);

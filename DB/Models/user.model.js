@@ -1,7 +1,7 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 import { systemRoles } from "../../src/utils/system-roles.js";
 
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
@@ -37,7 +37,7 @@ const userSchema = new Schema(
     ],
     role: {
       type: String,
-      enum: [systemRoles.USER, systemRoles.ADMIN , systemRoles.SUPER_ADMIN],
+      enum: Object.values(systemRoles),
       default: systemRoles.USER,
     },
     isEmailVerified: {
@@ -49,10 +49,10 @@ const userSchema = new Schema(
       min: [18, "too young!"],
       max: [100, "too old!"],
     },
-    // isActive: {
-    //   type: Boolean,
-    //   default: true,
-    // },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     // isBlocked: {
     //   type: Boolean,
     //   default: false,
@@ -65,4 +65,4 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("User", userSchema);
+export default mongoose.models.User || model("User", userSchema);

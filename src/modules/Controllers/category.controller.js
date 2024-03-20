@@ -1,21 +1,26 @@
 import slugify from "slugify";
 
-import User from "../../../DB/Models/user.model.js";
 import Category from "../../../DB/Models/category.model.js";
 import SubCategory from "../../../DB/Models/sub-category.model.js";
 import Brand from "../../../DB/Models/brand.model.js";
-import Product from "../../../DB/Models/product.model.js";
 
-import { systemRoles } from "../../utils/system-roles.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
 import generateUniqueString from "../../utils/generate-unique-string.js";
+import ApiFeatures from "../../utils/api-features.js";
 
 // ========================================= addCategory ================================//
 
 /**
  * destructuring the required data from the request body
  * create new document in the database
- *
+ * check user login
+ * check if the category already exists
+ * generate slug
+ * upload image to cloudinary
+ * generate the category object
+ * save the category
+ * add category to the user
+ * return the response
  */
 
 export const addCategory = async (req, res) => {
@@ -51,7 +56,7 @@ export const addCategory = async (req, res) => {
   const category = {
     name,
     slug,
-    image: {
+    Image: {
       secure_url,
       public_id,
     },
@@ -73,6 +78,11 @@ export const addCategory = async (req, res) => {
 /**
  * destructuring the required data from the request body
  * destructuring the request params
+ * check if the category exists
+ * check if the user want to update the name
+ * check if the user want to update the image
+ * update the category
+ * set value of updatedBy
  */
 
 export const updateCategory = async (req, res) => {
@@ -125,7 +135,13 @@ export const updateCategory = async (req, res) => {
 // ========================================= deleteCategory ================================//
 
 /**
- *
+ * destructuring the request params
+ * delete category
+ * delete subcategories
+ * delete brand
+ * delete image from cloudinary
+ * delete folder from cloudinary
+ * return the response
  */
 
 export const deleteCategory = async (req, res) => {
@@ -158,29 +174,50 @@ export const deleteCategory = async (req, res) => {
   });
 };
 
-// ========================================= getAllCategories ================================//
+// ========================================= Get All Categories ================================//
 
 /**
+ * destructuring the request query
+ * get all categories
  */
 
 export const getAllCategories = async (req, res, next) => {
-  // nested populate
-  const categories = await Category.find().populate([
-    {
-      path: "subcategories",
-      populate: [
-        {
-          path: "Brands",
-        },
-      ],
-    },
-  ]);
-  // console.log(categories);
-  res
-    .status(200)
-    .json({
-      success: true,
-      message: "Categories fetched successfully",
-      data: categories,
-    });
+  
+  const { page, size, sort, ...search } = req.query;
+
+  const features = new ApiFeatures(req.query, Category.find())
+    .sort(sort)
+    .pagination({ page, size })
+    .search(search);
+
+  const categories = await features.mongooseQuery;
+
+  res.status(200).json({
+    success: true,
+    message: "Categories fetched successfully",
+    data: categories,
+  });
 };
+
+
+// ========================================= Get Category By Id ================================//
+
+/**
+ * destructuring the request query
+ * get category by id
+ */
+
+export const getCategoryById = async (req, res, next) => {
+  const { categoryId } = req.params;
+
+  const category = await Category.findById(categoryId);
+
+  if (!category) {
+    return next({ message: "Category not found", cause: 404 });
+  }
+
+  res.status(200).json({ category });
+  next({ message: "Failed to fetch Category", cause: 500 });
+};
+
+

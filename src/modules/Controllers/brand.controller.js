@@ -1,21 +1,28 @@
 import slugify from "slugify";
 
-import User from "../../../DB/Models/user.model.js";
 import Category from "../../../DB/Models/category.model.js";
 import SubCategory from "../../../DB/Models/sub-category.model.js";
 import Brand from "../../../DB/Models/brand.model.js";
-import Product from "../../../DB/Models/product.model.js";
 
 import { systemRoles } from "../../utils/system-roles.js";
 import cloudinaryConnection from "../../utils/cloudinary.js";
 import generateUniqueString from "../../utils/generate-unique-string.js";
+import ApiFeatures from "../../utils/api-features.js";
 
-// ========================================= addBrand ================================//
+// ========================================= Add Brand ================================//
 
 /**
  * destructuring the required data from the request body
  * create new document in the database
- *
+ * return the response
+ * check user login
+ * check if the brand already exists
+ * check if the category exists
+ * generate slug
+ * upload brand logo to cloudinary
+ * generate the brand object
+ * save the brand
+ * return the response
  */
 
 export const addBrand = async (req, res, next) => {
@@ -83,10 +90,20 @@ export const addBrand = async (req, res, next) => {
   });
 };
 
-// ========================================= updateBrand ================================//
+// ========================================= Update Brand ================================//
 
 /**
- *
+ * check if the brand exists
+ * check if the brand belongs to the specified subcategory & category
+ * check if the brand belongs to the user
+ * check if the category exists
+ * check if the subcategory exists
+ * update the brand properties
+ * return the response
+ * upload brand logo to cloudinary
+ * generate the brand object
+ * update the brand
+ * return the response
  */
 
 export const updateBrand = async (req, res) => {
@@ -169,10 +186,17 @@ export const updateBrand = async (req, res) => {
   });
 };
 
-// ========================================= deleteBrand ================================//
+// ========================================= Delete Brand ================================//
 
 /**
- *
+ * check if the brand exists
+ * check if the brand belongs to the user
+ * delete the brand
+ * return the response
+ * delete image from cloudinary
+ * delete folder from cloudinary
+ * delete the brand
+ * return the response
  */
 
 export const deleteBrand = async (req, res) => {
@@ -187,7 +211,6 @@ export const deleteBrand = async (req, res) => {
       },
     ],
   });
-  console.log(brand);
   if (!brand) {
     return res.status(404).json({ message: "Brand not found" });
   }
@@ -197,8 +220,6 @@ export const deleteBrand = async (req, res) => {
   if (!brandDelete) {
     return res.status(404).json({ message: "Brand not found" });
   }
-
-  // console.log(`${process.env.MAIN_FOLDER}/Categories/${brand.subCategoryId.categoryId.folderId}/SubCategories/${brand.subCategoryId.folderId}/Brands/${brand.folderId}`)
 
   // Delete image from cloudinary
   await cloudinaryConnection().api.delete_resources_by_prefix(
@@ -216,17 +237,65 @@ export const deleteBrand = async (req, res) => {
   });
 };
 
-// ========================================= getBrand ================================//
+// ========================================= Get Brand ================================//
 
 /**
- *
+ * get all brands
  */
 
-export const getBrand = async (req, res) => {
-  const brands = await Brand.find();
+export const getAllBrand = async (req, res) => {
+  const { page, size, sort, ...search } = req.query;
+
+  const features = new ApiFeatures(req.query, Brand.find())
+    .sort(sort)
+    .pagination({ page, size })
+    .search(search);
+
+  const brands = await features.mongooseQuery;
+
   res.status(200).json({
     success: true,
-    message: "Categories fetched successfully",
+    message: "Brands fetched successfully",
     data: brands,
   });
+};
+
+// ========================================= All Brands For SubCategory ================================//
+
+/**
+ * check if the subcategory exists
+ * return the response
+ */
+
+export const getAllBrandsForSubCategory = async (req, res, next) => {
+  const { subCategoryId } = req.params;
+
+  const subcategory = await SubCategory.findById(subCategoryId);
+  if (!subcategory) {
+    return next({ message: "Subcategory not found", cause: 404 });
+  }
+
+  const brands = await Brand.find({ subCategoryId });
+
+  res.status(200).json({ brands });
+};
+
+// ========================================= All Brands For Category ================================//
+
+/**
+ * check if the category exists
+ * return the response
+ */
+
+export const getAllBrandsForCategory = async (req, res, next) => {
+  const { categoryId } = req.params;
+
+  const category = await Category.findById(categoryId);
+  if (!category) {
+    return next({ message: "Category not found", cause: 404 });
+  }
+
+  const brands = await Brand.find({ categoryId });
+
+  res.status(200).json({ brands });
 };

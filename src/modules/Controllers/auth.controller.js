@@ -132,7 +132,7 @@ export const verifyEmail = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
   const { email, password } = req.body;
   // get user by email
-  const user = await User.findOne({ email, isEmailVerified: true });
+  const user = await User.findOne({ email });
   if (!user) {
     return next(new Error("Invalid email credentials", { cause: 404 }));
   }
@@ -148,6 +148,7 @@ export const signIn = async (req, res, next) => {
     process.env.JWT_SECRET_LOGIN,
     { expiresIn: "1d" }
   );
+  user.token = token;
 
   // updated isLoggedIn = true  in database
   user.isLoggedIn = true;
@@ -160,4 +161,117 @@ export const signIn = async (req, res, next) => {
       token,
     },
   });
+};
+
+// ========================================= Forgot Password ================================//
+
+/**
+ * destructuring the required data from the request body
+ * get user by email
+ * if not return error user not found
+ * generate password reset token
+ * save it in the user document
+ */
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  // Generate a password reset token and save it in the user document
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const resetToken = jwt.sign(
+    { email },
+    process.env.JWT_SECRET_LOGIN,
+    { expiresIn: "15m" }
+  );
+  user.resetToken = resetToken;
+  await user.save();
+
+  // Send the password reset email to the user
+  const isEmailSent = await sendEmailService({
+    to: email,
+    subject: "Password Reset",
+    message: `
+      <h2>Reset your password</h2>
+      <p>Click on the following link to reset your password:</p>
+      <a href="http://localhost:3000/reset-password?token=${resetToken}">Reset Password</a>
+    `,
+  });
+
+  if (!isEmailSent) {
+    return res.status(500).json({ message: "Failed to send email" });
+  }
+
+  res.status(200).json({ message: "Password reset email sent" });
+};
+
+// ========================================= Reset Password ================================//
+
+/**
+ * destructuring token from the request query
+ * verify and decode the JWT token
+ * get user by email
+ * if not return error user not found
+ * generate password reset token
+ * save it in the user document
+ * return the response
+ */
+
+export const resetPassword = async (req, res) => {
+  const { token } = req.praams;
+
+  const decoded = verifyToken(token, process.env.JWT_SECRET_LOGIN);
+
+  // Generate a password reset token and save it in the user document
+  const user = await User.findOne({ email: decoded?.email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const {newPassword} = req.body;
+  user.password = newPassword;
+  const resetPassData = await user.save();
+ 
+  res.status(200).json({ message: "Password reset email sent" ,resetPassData });
+};
+
+// ========================================= Update Password ================================//
+
+/**
+ * destructuring the required data from the request body
+ * verify and decode the JWT token
+ * get user by email
+ * if not return error user not found
+ * hash the new password
+ * update the password in the database
+ * return the response
+ */
+
+export const updatePassword = async (req, res, next) => {
+  const { token, newPassword } = req.body;
+
+  // Verify and decode the JWT token
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_LOGIN);
+  const email = decoded.email;
+
+  // Find the user in the database using the email
+  const user = await User.findOne({ email });
+
+  // If the user does not exist, return an error
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+
+  // Hash the new password
+  const hashedPassword = bcrypt.hashSync(newPassword, +process.env.SALT_ROUNDS);
+
+  // Update the password in the database
+  user.password = hashedPassword;
+  await user.save();
+
+  // Return a success response
+  res.json({ success: true, message: "Password updated successfully" });
 };

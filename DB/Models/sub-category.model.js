@@ -1,20 +1,17 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
-const subCategorySchema = new Schema(
+const subCategorySchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      // unique: [true, "subCategory name is required!"],
       minLength: [3, "too short subCategory name"],
       maxLength: [20, "too long subCategory name"],
       trim: true,
-      // lowercase: true,
     },
     slug: {
       type: String,
       lowercase: true,
-      // required: true,
     },
     image: {
       secure_url: {
@@ -24,13 +21,11 @@ const subCategorySchema = new Schema(
       public_id: {
         type: String,
         required: true,
-        // unique: true,
       },
     },
     folderId: {
       type: String,
       required: true,
-      // unique: true,
     },
     addedBy: {
       type: Schema.Types.ObjectId,
@@ -56,4 +51,4 @@ subCategorySchema.virtual("Brands", {
   foreignField: "subCategoryId",
 });
 
-export default model("SubCategory", subCategorySchema);
+export default mongoose.models.SubCategory || model("SubCategory", subCategorySchema);

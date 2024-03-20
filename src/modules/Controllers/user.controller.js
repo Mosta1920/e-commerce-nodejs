@@ -1,23 +1,13 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import slugify from "slugify";
-
 import User from "../../../DB/Models/user.model.js";
-import Category from "../../../DB/Models/category.model.js";
-import SubCategory from "../../../DB/Models/sub-category.model.js";
-import Brand from "../../../DB/Models/brand.model.js";
-import Product from "../../../DB/Models/product.model.js";
 
-import { systemRoles } from "../../utils/system-roles.js";
-import cloudinaryConnection from "../../utils/cloudinary.js";
-import generateUniqueString from "../../utils/generate-unique-string.js";
-
-import sendEmailService from "../services/send-email.service.js";
-
-// ========================================= updateUser ================================//
+// ========================================= Update User ================================//
 
 /**
- *
+ * destructuring the required data from the request body
+ * check if the user exists
+ * check if the phone number already exists
+ * update the user
+ * return the response
  */
 
 export const updateUser = async (req, res) => {
@@ -49,20 +39,24 @@ export const updateUser = async (req, res) => {
   });
 };
 
-// ========================================= deleteUser ================================//
+// ========================================= Delete User ================================//
 
 /**
- *
+ * destructuring the required data from params
+ * check if the user exists
+ * deleted the user
  */
 
 export const deleteUser = async (req, res) => {
-  const { _id } = req.authUser;
   const { userId } = req.params;
 
   // check if the user exists
-  const user = await User.findByIdAndDelete({ _id });
-
-  if (!user) {
+  const deletedUser = await User.findByIdAndUpdate(
+    userId,
+    { isDeleted: true },
+    { new: true }
+  );
+  if (!deletedUser) {
     return res.status(404).json({
       success: false,
       message: "User not found",
@@ -71,23 +65,23 @@ export const deleteUser = async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: "User deleted successfully",
+    message: "User account  deleted successfully",
+    user: deletedUser,
   });
 };
 
-// ========================================= getAllUser ================================//
+// ========================================= Get All Users ================================//
 
 /**
- *
+ * get all users
  */
 
-export const getAllUser = async (req, res) => {
-
+export const getAllUsers = async (req, res) => {
   const users = await User.find();
 
   res.status(200).json({
     success: true,
     message: "Users fetched successfully",
     data: users,
-  })
+  });
 };

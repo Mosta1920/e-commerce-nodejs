@@ -1,15 +1,13 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
-const brandSchema = new Schema(
+const brandSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      // unique: [true, "Brand name is required!"],
       minLength: [2, "too short Brand name"],
       maxLength: [20, "too long Brand name"],
       trim: true,
-      // lowercase: true,
     },
     slug: {
       type: String,
@@ -25,13 +23,11 @@ const brandSchema = new Schema(
       public_id: {
         type: String,
         required: true,
-        // unique: true,
       },
     },
     folderId: {
       type: String,
       required: true,
-      // unique: true,
     },
     addedBy: {
       type: Schema.Types.ObjectId,
@@ -56,4 +52,4 @@ const brandSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("Brand", brandSchema);
+export default mongoose.models.Brand || model("Brand", brandSchema);

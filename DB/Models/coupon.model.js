@@ -1,30 +1,69 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
-const couponSchema = new Schema(
+const couponSchema = new mongoose.Schema(
   {
-    code: {
+    couponCode: {
       type: String,
       required: true,
-      unique: [true, "coupon code is required!"],
       trim: true,
       lowercase: true,
+      unique: true,
     },
-    discount: {
+    couponAmount: {
       type: Number,
       required: true,
-      min: [0, "min discount is 0"],
-      max: [100, "max discount is 100"],
+      min: 1,
     },
-    expireDate: {
-      type: Date,
+    couponStatus: {
+      type: String,
+      default: "valid",
+      enum: ["valid", "expired"],
+    },
+    isFixed: {
+      type: Boolean,
+      default: false,
+    },
+    isPercentage: {
+      type: Boolean,
+      default: false,
+    },
+    fromDate: {
+      type: String,
       required: true,
     },
-    addedBy: {
+    toDate: {
+      type: String,
+      required: true,
+    },
+    isEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    isDisabled: {
+      type: Boolean,
+      default: false,
+    },
+    disabledAt: {
+      type: Date,
+    },
+    disabledBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    enabledBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    enabledAt: {
+      type: Date,
+    },
+    addedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export default model("Coupon", couponSchema);
+export default mongoose.models.Coupon || mongoose.model("Coupon", couponSchema);
